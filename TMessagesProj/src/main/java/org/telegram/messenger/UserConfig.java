@@ -110,15 +110,15 @@ public class UserConfig extends BaseController {
 
     public UserConfig(int instance) {
         super(instance);
-    }
+}
 
     public static boolean hasPremiumOnAccounts() {
-        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
-            if (AccountInstance.getInstance(a).getUserConfig().isClientActivated() && AccountInstance.getInstance(a).getUserConfig().getUserConfig().isPremium()) {
-                return true;
-            }
-        }
-        return false;
+//        for (int a = 0; a < MAX_ACCOUNT_COUNT; a++) {
+//            if (AccountInstance.getInstance(a).getUserConfig().isClientActivated() && AccountInstance.getInstance(a).getUserConfig().getUserConfig().isPremium()) {
+//                return true;
+//            }
+//        }
+        return true;
     }
 
     public static int getMaxAccountCount() {
