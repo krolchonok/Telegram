@@ -22635,53 +22635,54 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private boolean sponsoredMessagesAdded;
     private Pattern sponsoredUrlPattern;
     private void addSponsoredMessages(boolean animated) {
-        if (sponsoredMessagesAdded || chatMode != 0 || !ChatObject.isChannel(currentChat) || !forwardEndReached[0] || getUserConfig().isPremium() && getMessagesController().isSponsoredDisabled()) {
-            return;
-        }
-        MessagesController.SponsoredMessagesInfo res = getMessagesController().getSponsoredMessages(dialog_id);
-        if (res == null || res.messages == null) {
-            return;
-        }
-        for (int i = 0; i < res.messages.size(); i++) {
-            MessageObject messageObject = res.messages.get(i);
-            messageObject.resetLayout();
-            if (messageObject.sponsoredUrl != null) {
-                try {
-                    if (sponsoredUrlPattern == null) {
-                        sponsoredUrlPattern = Pattern.compile("https://t\\.me/(\\w+)(?:/(\\d+))?");
-                    }
-                    Matcher matcher = sponsoredUrlPattern.matcher(messageObject.sponsoredUrl);
-                    if (matcher.matches()) {
-                        String username = matcher.group(1);
-                        int postId = 0;
-                        try {
-                            postId = matcher.groupCount() >= 2 ? Integer.parseInt(matcher.group(2)) : 0;
-                        } catch (Exception e2) {
-                            FileLog.e(e2);
-                        }
-                        TLObject obj = getMessagesController().getUserOrChat(username);
-                        long did;
-                        if (obj instanceof TLRPC.User) {
-                            did = ((TLRPC.User) obj).id;
-                        } else if (obj instanceof TLRPC.Chat) {
-                            did = -((TLRPC.Chat) obj).id;
-                        } else {
-                            continue;
-                        }
-                        if (postId < 0) continue;
-                        getMessagesController().ensureMessagesLoaded(did, postId, null);
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e, false);
-                }
-            }
-        }
-        sponsoredMessagesAdded = true;
-        sponsoredMessagesPostsBetween = res.posts_between != null ? res.posts_between : 0;
-        if (notPushedSponsoredMessages != null) {
-            notPushedSponsoredMessages.clear();
-        }
-        processNewMessages(res.messages);
+        return;
+//        if (sponsoredMessagesAdded || chatMode != 0 || !ChatObject.isChannel(currentChat) || !forwardEndReached[0] || getUserConfig().isPremium() && getMessagesController().isSponsoredDisabled()) {
+//            return;
+//        }
+//        MessagesController.SponsoredMessagesInfo res = getMessagesController().getSponsoredMessages(dialog_id);
+//        if (res == null || res.messages == null) {
+//            return;
+//        }
+//        for (int i = 0; i < res.messages.size(); i++) {
+//            MessageObject messageObject = res.messages.get(i);
+//            messageObject.resetLayout();
+//            if (messageObject.sponsoredUrl != null) {
+//                try {
+//                    if (sponsoredUrlPattern == null) {
+//                        sponsoredUrlPattern = Pattern.compile("https://t\\.me/(\\w+)(?:/(\\d+))?");
+//                    }
+//                    Matcher matcher = sponsoredUrlPattern.matcher(messageObject.sponsoredUrl);
+//                    if (matcher.matches()) {
+//                        String username = matcher.group(1);
+//                        int postId = 0;
+//                        try {
+//                            postId = matcher.groupCount() >= 2 ? Integer.parseInt(matcher.group(2)) : 0;
+//                        } catch (Exception e2) {
+//                            FileLog.e(e2);
+//                        }
+//                        TLObject obj = getMessagesController().getUserOrChat(username);
+//                        long did;
+//                        if (obj instanceof TLRPC.User) {
+//                            did = ((TLRPC.User) obj).id;
+//                        } else if (obj instanceof TLRPC.Chat) {
+//                            did = -((TLRPC.Chat) obj).id;
+//                        } else {
+//                            continue;
+//                        }
+//                        if (postId < 0) continue;
+//                        getMessagesController().ensureMessagesLoaded(did, postId, null);
+//                    }
+//                } catch (Exception e) {
+//                    FileLog.e(e, false);
+//                }
+//            }
+//        }
+//        sponsoredMessagesAdded = true;
+//        sponsoredMessagesPostsBetween = res.posts_between != null ? res.posts_between : 0;
+//        if (notPushedSponsoredMessages != null) {
+//            notPushedSponsoredMessages.clear();
+//        }
+//        processNewMessages(res.messages);
     }
 
     public void removeFromSponsored(MessageObject message) {
