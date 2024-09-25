@@ -61,20 +61,39 @@ public class LocaleController {
 
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
-        if (formatterDay == null) {
+        return getFormatterDayWithSeconds();
+//        if (formatterDay == null) {
+//            synchronized (this) {
+//                if (formatterDay == null) {
+//                    final Locale locale = currentLocale == null ? Locale.getDefault() : currentLocale;
+//                    String lang = locale.getLanguage();
+//                    if (lang == null) {
+//                        lang = "en";
+//                    }
+//                    lang = lang.toLowerCase();
+//                    formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
+//                }
+//            }
+//        }
+//        return formatterDay;
+    }
+
+    private volatile FastDateFormat formatterDayWithSeconds;
+    public FastDateFormat getFormatterDayWithSeconds() {
+        if (formatterDayWithSeconds == null) {
             synchronized (this) {
-                if (formatterDay == null) {
+                if (formatterDayWithSeconds == null) {
                     final Locale locale = currentLocale == null ? Locale.getDefault() : currentLocale;
                     String lang = locale.getLanguage();
                     if (lang == null) {
                         lang = "en";
                     }
                     lang = lang.toLowerCase();
-                    formatterDay = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24H", R.string.formatterDay24H) : getStringInternal("formatterDay12H", R.string.formatterDay12H), is24HourFormat ? "HH:mm" : "h:mm a");
+                    formatterDayWithSeconds = createFormatter(lang.toLowerCase().equals("ar") || lang.toLowerCase().equals("ko") ? locale : Locale.US, is24HourFormat ? getStringInternal("formatterDay24HSec", R.string.formatterDay24HSec) : getStringInternal("formatterDay12HSec", R.string.formatterDay12HSec), is24HourFormat ? "HH:mm:ss" : "h:mm:ss a");
                 }
             }
         }
-        return formatterDay;
+        return formatterDayWithSeconds;
     }
 
     private volatile FastDateFormat formatterConstDay;

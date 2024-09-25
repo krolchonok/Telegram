@@ -8016,4 +8016,7 @@
     <string name="BoostReasonGiveaway">Giveaway</string>
     <string name="BoostDate">Date</string>
     <string name="BoostUntil">Until</string>
+
+    <string name="formatterDay24HSec">HH:mm:ss</string>
+    <string name="formatterDay12HSec">h:mm:ss a</string>
 </resources>
