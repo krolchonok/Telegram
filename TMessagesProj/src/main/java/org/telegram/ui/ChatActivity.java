@@ -125,6 +125,7 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout;
+import com.google.common.base.Charsets;
 import com.google.zxing.common.detector.MathUtils;
 
 import org.telegram.PhoneFormat.PhoneFormat;
@@ -266,6 +267,7 @@ import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -35799,12 +35801,39 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                     !(button instanceof TLRPC.TL_keyboardButtonUserProfile)) {
                 return;
             }
-            if (button instanceof TLRPC.TL_keyboardButtonUrl) {
+            if (!TextUtils.isEmpty(button.url)) {
                 openClickableLink(null, button.url, true, cell, cell.getMessageObject(), false);
-                try {
-                    cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
-                } catch (Exception ignore) {}
+            } else {
+                BottomSheet.Builder builder = new BottomSheet.Builder(getParentActivity(), false, themeDelegate);
+                String data = new String(button.data, StandardCharsets.UTF_8);
+                builder.setTitle(button.text);
+
+                builder.setItems(new CharSequence[]{
+                        LocaleController.getString(R.string.Copy),
+                        button.data != null ? "Data: " + data : null,
+                        button.query != null ? LocaleController.getString(R.string.CopyInlineQuery) : null,
+                        button.user_id != 0 ? LocaleController.getString(R.string.CopyID) : null}, (dialog, which) -> {
+                    if (which == 0) {
+                        AndroidUtilities.addToClipboard(button.text);
+                    } else if (which == 1) {
+                        AndroidUtilities.addToClipboard(data);
+                    } else if (which == 2) {
+                        AndroidUtilities.addToClipboard(button.query);
+                    } else if (which == 3) {
+                        AndroidUtilities.addToClipboard(String.valueOf(button.user_id));
+                    }
+                    createUndoView();
+                    if (undoView == null) {
+                        return;
+                    }
+                    undoView.showWithAction(0, UndoView.ACTION_TEXT_COPIED, null);
+                });
+                showDialog(builder.create());
             }
+            try {
+                cell.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS, HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+            } catch (Exception ignore) {}
+            return;
         }
 
         @Override

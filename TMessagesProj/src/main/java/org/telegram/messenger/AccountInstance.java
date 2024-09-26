@@ -90,6 +90,7 @@ public class AccountInstance {
         return FileRefController.getInstance(currentAccount);
     }
 
+
     public SharedPreferences getNotificationsSettings() {
         return MessagesController.getNotificationsSettings(currentAccount);
     }

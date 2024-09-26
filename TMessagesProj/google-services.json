@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "155846983113",
-    "project_id": "orgushastoemessenger",
-    "storage_bucket": "orgushastoemessenger.appspot.com"
+    "project_number": "691340126609",
+    "project_id": "telegram-fcb1c",
+    "storage_bucket": "telegram-fcb1c.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:155846983113:android:71307d850740f772affc18",
+        "mobilesdk_app_id": "1:691340126609:android:10ca9dd8be5b572e185230",
         "android_client_info": {
           "package_name": "org.telegram.messenger"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDx2g7X0m3iYgmWLF41hMRjBHD7aab-h_s"
+          "current_key": "AIzaSyBXzGi0Ekmm1rxIsXe8Bek3eZXexYBULzc"
         }
       ],
       "services": {
@@ -26,7 +26,7 @@
     },
     {
       "client_info": {
-        "mobilesdk_app_id": "1:155846983113:android:e2a92346a422c4f0affc18",
+        "mobilesdk_app_id": "1:691340126609:android:f5c56520a777b105185230",
         "android_client_info": {
           "package_name": "org.telegram.messenger.beta"
         }
@@ -34,7 +34,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDx2g7X0m3iYgmWLF41hMRjBHD7aab-h_s"
+          "current_key": "AIzaSyBXzGi0Ekmm1rxIsXe8Bek3eZXexYBULzc"
         }
       ],
       "services": {
