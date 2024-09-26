@@ -75,6 +75,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -1687,6 +1688,16 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             }
             ChatMessageCell cell = (ChatMessageCell) view;
             MessageObject primaryMessage = cell.getPrimaryMessageObject();
+
+            MessageObject message = cell.getMessageObject();
+
+            if(message.isOut()) {
+                selectedObject = message;
+                selectedObjectGroup = getValidGroupedMessage(message);
+                processSelectedOption(OPTION_EDIT);
+                return;
+            }
+
             if (primaryMessage.isSecretMedia() || primaryMessage.isExpiredStory() || primaryMessage.type == MessageObject.TYPE_JOINED_CHANNEL) {
                 return;
             }

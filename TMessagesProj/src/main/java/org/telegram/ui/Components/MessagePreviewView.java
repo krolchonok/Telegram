@@ -25,6 +25,7 @@ import android.text.StaticLayout;
 import android.text.TextUtils;
 import android.text.style.CharacterStyle;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -86,7 +87,7 @@ public class MessagePreviewView extends FrameLayout {
     public static final int TAB_REPLY = 0;
     public static final int TAB_FORWARD = 1;
     public static final int TAB_LINK = 2;
-
+    public static final int ID_MSG = 3;
     final boolean showOutdatedQuote;
     final ChatActivity chatActivity;
     final MessagePreviewParams messagePreviewParams;
@@ -1727,6 +1728,7 @@ public class MessagePreviewView extends FrameLayout {
     @SuppressLint("ClickableViewAccessibility")
     public MessagePreviewView(@NonNull Context context, ChatActivity chatActivity, MessagePreviewParams params, TLRPC.User user, TLRPC.Chat chat, int currentAccount, ResourcesDelegate resourcesProvider, int startTab, boolean showOutdatedQuote)  {
         super(context);
+        Log.d("test","hello");
         this.showOutdatedQuote = showOutdatedQuote;
         this.chatActivity = chatActivity;
         this.currentAccount = currentAccount;
@@ -1765,8 +1767,9 @@ public class MessagePreviewView extends FrameLayout {
         };
 
         tabsView = new TabsView(context, resourcesProvider);
+
         int p = 0;
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < 4; ++i) {
             if (i == TAB_REPLY && params.replyMessage != null) {
                 tabsView.addTab(TAB_REPLY, LocaleController.getString(R.string.MessageOptionsReply));
             } else if (i == TAB_FORWARD && params.forwardMessages != null && !showOutdatedQuote) {
