@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "LaunchTG",
+            "type": "shell",
+            "command": "adb shell am start -n org.ushastoe.fluffy/org.telegram.ui.LaunchActivity",
+            "problemMatcher": []
+        },
+        {
+            "label": "GradlewInstall",
+            "type": "shell",
+            "command": "./gradlew installAfatDebug",
+            "problemMatcher": []
+        },
+        {
+            "label": "Run All Tasks",
+            "dependsOrder": "sequence",
+            "dependsOn": ["GradlewInstall", "LaunchTG"],
+            "problemMatcher": []
+        }
+    ]
+}

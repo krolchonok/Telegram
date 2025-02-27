@@ -21,8 +21,6 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
-import android.util.Base64;
-import android.util.Log;
 import android.util.Pair;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -111,7 +109,6 @@ public class MessagesStorage extends BaseController {
     }
 
     public final static int LAST_DB_VERSION = 162;
-    private final static int DUROV_RELOGIN = 1;
     private boolean databaseMigrationInProgress;
     public boolean showClearDatabaseAlert;
     private final LongSparseIntArray dialogIsForum = new LongSparseIntArray();
@@ -315,11 +312,6 @@ public class MessagesStorage extends BaseController {
             database.executeFast("PRAGMA journal_mode = WAL").stepThis().dispose();
             database.executeFast("PRAGMA journal_size_limit = 10485760").stepThis().dispose();
 
-            database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
-            database.executeFast("CREATE TABLE telegraher_message_history(ownerid INTEGER, mid INTEGER, uid INTEGER, date INTEGER, message TEXT, PRIMARY KEY(mid, uid, date));").stepThis().dispose();            database.executeFast("CREATE INDEX mid_uid ON telegraher_message_history (mid, uid);").stepThis().dispose();
-            database.executeFast("CREATE TABLE telegraher_message_deletions(mid INTEGER, uid INTEGER, isdel INTEGER, PRIMARY KEY(mid, uid));").stepThis().dispose();
-            database.executeFast(String.format(Locale.US, "INSERT INTO telegraher_init VALUES(%d);", DUROV_RELOGIN)).stepThis().dispose();
-
             if (createTable) {
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("create new database");
@@ -327,12 +319,6 @@ public class MessagesStorage extends BaseController {
                 createTables(database);
             } else {
                 int version = database.executeInt("PRAGMA user_version");
-                int durovRelogin = 0;
-                try {
-                    durovRelogin = database.executeInt("select durov_relogin from telegraher_init");
-                } catch (SQLiteException wtfdurov) {
-                    //HelloWorld
-                }
                 if (BuildVars.LOGS_ENABLED) {
                     FileLog.d("current db version = " + version);
                 }
@@ -370,9 +356,9 @@ public class MessagesStorage extends BaseController {
                         FileLog.e(e2);
                     }
                 }
-                if ((version < LAST_DB_VERSION) || (durovRelogin < DUROV_RELOGIN)) {
+                if (version < LAST_DB_VERSION) {
                     try {
-                        updateDbToLastVersion(version, durovRelogin);
+                        updateDbToLastVersion(version);
                     } catch (Exception e) {
                         if (BuildVars.DEBUG_PRIVATE_VERSION) {
                             throw e;
@@ -753,7 +739,7 @@ public class MessagesStorage extends BaseController {
         return databaseMigrationInProgress;
     }
 
-    private void updateDbToLastVersion(int currentVersion, int durovRelogin) throws Exception {
+    private void updateDbToLastVersion(int currentVersion) throws Exception {
         AndroidUtilities.runOnUIThread(() -> {
             databaseMigrationInProgress = true;
             NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.onDatabaseMigration, true);
@@ -761,7 +747,7 @@ public class MessagesStorage extends BaseController {
 
         int version = currentVersion;
         FileLog.d("MessagesStorage start db migration from " + version + " to " + LAST_DB_VERSION);
-        version = DatabaseMigrationHelper.migrate(MessagesStorage.this, version, durovRelogin);
+        version = DatabaseMigrationHelper.migrate(MessagesStorage.this, version);
 
         FileLog.d("MessagesStorage db migration finished to varsion " + version);
         AndroidUtilities.runOnUIThread(() -> {
@@ -872,7 +858,7 @@ public class MessagesStorage extends BaseController {
                 tryRecover = false;
                 clearLoadingDialogsOffsets();
                 AndroidUtilities.runOnUIThread(() -> {
-                   getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
+                    getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
                 });
                 FileLog.e(new Exception("database restored!!"));
             } else {
@@ -1747,11 +1733,11 @@ public class MessagesStorage extends BaseController {
 
                             NativeByteBuffer data2 = cursor.byteBufferValue(2);
                             //if (data2 != null) {
-                                topic.topicStartMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
-                                if (data2 != null) {
-                                    data2.reuse();
-                                }
-                           // }
+                            topic.topicStartMessage = TLRPC.Message.TLdeserialize(data2, data2.readInt32(false), false);
+                            if (data2 != null) {
+                                data2.reuse();
+                            }
+                            // }
                             topic.unread_count = cursor.intValue(3);
                             topic.read_inbox_max_id = cursor.intValue(4);
                             topic.unread_mentions_count = cursor.intValue(5);
@@ -1795,9 +1781,9 @@ public class MessagesStorage extends BaseController {
 
                             try {
                                 if (message != null && message.reply_to != null && message.reply_to.reply_to_msg_id != 0 && (
-                                    message.action instanceof TLRPC.TL_messageActionPinMessage ||
-                                    message.action instanceof TLRPC.TL_messageActionPaymentSent ||
-                                    message.action instanceof TLRPC.TL_messageActionGameScore
+                                        message.action instanceof TLRPC.TL_messageActionPinMessage ||
+                                                message.action instanceof TLRPC.TL_messageActionPaymentSent ||
+                                                message.action instanceof TLRPC.TL_messageActionGameScore
                                 )) {
                                     if (!cursor2.isNull(2)) {
                                         NativeByteBuffer data2 = cursor2.byteBufferValue(2);
@@ -2079,7 +2065,7 @@ public class MessagesStorage extends BaseController {
                 try {
                     database.executeFast(String.format(Locale.US, "UPDATE topics SET read_outbox = max((SELECT read_outbox FROM topics WHERE did = %d AND topic_id = %d), %d) WHERE did = %d AND topic_id = %d", topicKey.dialogId, topicKey.topicId, value, topicKey.dialogId, topicKey.topicId)).stepThis().dispose();
                 } catch (SQLiteException e) {
-                   checkSQLException(e);
+                    checkSQLException(e);
                 }
             }
         });
@@ -2117,7 +2103,7 @@ public class MessagesStorage extends BaseController {
             getNotificationCenter().postNotificationName(NotificationCenter.didClearDatabase);
             getMediaDataController().loadAttachMenuBots(false, true);
             getNotificationCenter().postNotificationName(NotificationCenter.onDatabaseReset);
-            
+
             getMessagesController().getStoriesController().cleanup();
         });
     }
@@ -2228,7 +2214,7 @@ public class MessagesStorage extends BaseController {
         LongSparseArray<Long> groupsToLoad = new LongSparseArray<>();
         SQLiteCursor cursor = null;
         try {
-            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags, m.date, d.pts, d.inbox_max, d.outbox_max, m.replydata, d.pinned, d.unread_count_i, d.flags, d.folder_id, d.data, d.unread_reactions, d.last_mid_group, d.ttl_period, tmd.isdel FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid LEFT JOIN dialog_settings as s ON d.did = s.did LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE d.did IN (%s) ORDER BY d.pinned DESC, d.date DESC", ids));
+            cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags, m.date, d.pts, d.inbox_max, d.outbox_max, m.replydata, d.pinned, d.unread_count_i, d.flags, d.folder_id, d.data, d.unread_reactions, d.last_mid_group, d.ttl_period FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid LEFT JOIN dialog_settings as s ON d.did = s.did WHERE d.did IN (%s) ORDER BY d.pinned DESC, d.date DESC", ids));
             while (cursor.next()) {
                 long dialogId = cursor.longValue(0);
                 TLRPC.Dialog dialog = new TLRPC.TL_dialog();
@@ -2272,7 +2258,6 @@ public class MessagesStorage extends BaseController {
                         data.reuse();
                         MessageObject.setUnreadFlags(message, cursor.intValue(5));
                         message.id = cursor.intValue(6);
-                        message.isDeleted = !cursor.isNull(22);
                         int date = cursor.intValue(9);
                         if (date != 0) {
                             dialog.last_message_date = date;
@@ -2410,7 +2395,7 @@ public class MessagesStorage extends BaseController {
                 for (int a = 0, N = replyMessageOwners.size(); a < N; a++) {
                     long dialogId = replyMessageOwners.keyAt(a);
                     TLRPC.Message ownerMessage = replyMessageOwners.valueAt(a);
-                    SQLiteCursor replyCursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, m.uid, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid = %d and m.uid = %d", ownerMessage.id, dialogId));
+                    SQLiteCursor replyCursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid = %d and uid = %d", ownerMessage.id, dialogId));
                     while (replyCursor.next()) {
                         NativeByteBuffer data = replyCursor.byteBufferValue(0);
                         if (data != null) {
@@ -2418,7 +2403,6 @@ public class MessagesStorage extends BaseController {
                             message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             message.id = replyCursor.intValue(1);
-                            message.isDeleted = !replyCursor.isNull(4);
                             message.date = replyCursor.intValue(2);
                             message.dialog_id = replyCursor.longValue(3);
 
@@ -3596,7 +3580,7 @@ public class MessagesStorage extends BaseController {
                     } else if (findInScheduled) {
                         cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM scheduled_messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
                     } else {
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, m.uid, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN(%s) AND m.uid = %d", TextUtils.join(",", ids), dialogId));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT data, mid, date, uid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", TextUtils.join(",", ids), dialogId));
                     }
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
@@ -3605,8 +3589,6 @@ public class MessagesStorage extends BaseController {
                             message.readAttachPath(data, getUserConfig().clientUserId);
                             data.reuse();
                             message.id = cursor.intValue(1);
-                            if (!scheduled) message.isDeleted = !cursor.isNull(4);
-                            else message.isDeleted = false;
                             message.date = cursor.intValue(2);
                             if (quickReplies) {
                                 message.dialog_id = selfId;
@@ -3696,7 +3678,7 @@ public class MessagesStorage extends BaseController {
                 ArrayList<TLRPC.EncryptedChat> encryptedChats = new ArrayList<>();
                 int maxDate = 0;
                 if (ids.length() > 0) {
-                    cursor = database.queryFinalized("SELECT m.read_state, m.data, m.send_state, m.mid, m.date, m.uid, m.replydata, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.uid IN (" + ids.toString() + ") AND m.out = 0 AND m.read_state IN(0,2) ORDER BY m.date DESC LIMIT 50");
+                    cursor = database.queryFinalized("SELECT read_state, data, send_state, mid, date, uid, replydata FROM messages_v2 WHERE uid IN (" + ids.toString() + ") AND out = 0 AND read_state IN(0,2) ORDER BY date DESC LIMIT 50");
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(1);
                         if (data != null) {
@@ -3706,7 +3688,6 @@ public class MessagesStorage extends BaseController {
                             data.reuse();
                             MessageObject.setUnreadFlags(message, cursor.intValue(0));
                             message.id = cursor.intValue(3);
-                            message.isDeleted = !cursor.isNull(7);
                             message.date = cursor.intValue(4);
                             message.dialog_id = cursor.longValue(5);
                             messages.add(message);
@@ -8375,9 +8356,9 @@ public class MessagesStorage extends BaseController {
             ArrayList<Long> replyMessageRandomIds = new ArrayList<>();
             String messageSelect;
             if (threadMessageId != 0) {
-                messageSelect = "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp, m.forwards, m.replies_data, m.custom_params, m.reply_to_story_id, tmd.isdel FROM messages_topics as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid";
+                messageSelect = "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp, m.forwards, m.replies_data, m.custom_params, m.reply_to_story_id FROM messages_topics as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid";
             } else {
-                messageSelect = "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp, m.forwards, m.replies_data, m.custom_params, m.reply_to_story_id, tmd.isdel FROM messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid ";
+                messageSelect = "SELECT m.read_state, m.data, m.send_state, m.mid, m.date, r.random_id, m.replydata, m.media, m.ttl, m.mention, m.imp, m.forwards, m.replies_data, m.custom_params, m.reply_to_story_id FROM messages_v2 as m LEFT JOIN randoms_v2 as r ON r.mid = m.mid AND r.uid = m.uid";
             }
             if (scheduled) {
                 isEnd = true;
@@ -9029,7 +9010,6 @@ public class MessagesStorage extends BaseController {
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             message.send_state = cursor.intValue(2);
-                            message.isDeleted = !cursor.isNull(15);
                             long fullMid = cursor.longValue(3);
                             message.id = (int) fullMid;
                             if ((fullMid & 0xffffffff00000000L) == 0xffffffff00000000L && message.id > 0) {
@@ -9209,7 +9189,7 @@ public class MessagesStorage extends BaseController {
                 }
             }
             if (!replyMessageRandomOwners.isEmpty()) {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id, tmd.isdel FROM randoms_v2 as r INNER JOIN messages_v2 as m ON r.mid = m.mid AND r.uid = m.uid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessageRandomIds)));
+                cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.data, m.mid, m.date, r.random_id FROM randoms_v2 as r INNER JOIN messages_v2 as m ON r.mid = m.mid AND r.uid = m.uid WHERE r.random_id IN(%s)", TextUtils.join(",", replyMessageRandomIds)));
                 while (cursor.next()) {
                     NativeByteBuffer data = cursor.byteBufferValue(0);
                     if (data != null) {
@@ -9217,7 +9197,6 @@ public class MessagesStorage extends BaseController {
                         message.readAttachPath(data, currentUserId);
                         data.reuse();
                         message.id = cursor.intValue(1);
-                        message.isDeleted = !cursor.isNull(4);
                         message.date = cursor.intValue(2);
                         message.dialog_id = dialogId;
 
@@ -9402,6 +9381,7 @@ public class MessagesStorage extends BaseController {
     }
 
     private void updateWidgets(ArrayList<Long> dids) {
+    private void updateWidgets(ArrayList<Long> dids) {
         if (dids.isEmpty()) {
             return;
         }
@@ -9584,9 +9564,9 @@ public class MessagesStorage extends BaseController {
                 }
                 if (dids.isEmpty()) {
                     add = true;
-                    cursor = database.queryFinalized("SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, m.date, tmd.isdel FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE d.folder_id = 0 ORDER BY d.pinned DESC, d.date DESC LIMIT 0,10");
+                    cursor = database.queryFinalized("SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, m.date FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid WHERE d.folder_id = 0 ORDER BY d.pinned DESC, d.date DESC LIMIT 0,10");
                 } else {
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, m.date, tmd.isdel FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE d.did IN(%s)", TextUtils.join(",", dids)));
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, m.date FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid WHERE d.did IN(%s)", TextUtils.join(",", dids)));
                 }
                 while (cursor.next()) {
                     long dialogId = cursor.longValue(0);
@@ -9611,7 +9591,6 @@ public class MessagesStorage extends BaseController {
                         data.reuse();
                         MessageObject.setUnreadFlags(message, cursor.intValue(5));
                         message.id = cursor.intValue(6);
-                        message.isDeleted = !cursor.isNull(9);
                         message.send_state = cursor.intValue(7);
                         int date = cursor.intValue(8);
                         if (date != 0) {
@@ -10598,7 +10577,7 @@ public class MessagesStorage extends BaseController {
                     for (int b = 0, N2 = dialogs.size(); b < N2; b++) {
                         long dialogId = dialogs.keyAt(b);
                         ArrayList<Integer> mids = dialogs.valueAt(b);
-                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT m.mid, m.data, tmd.isdel FROM messages_v2 as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE m.mid IN (%s) AND m.uid = %d", TextUtils.join(",", mids), dialogId));
+                        cursor = database.queryFinalized(String.format(Locale.US, "SELECT mid, data FROM messages_v2 WHERE mid IN (%s) AND uid = %d", TextUtils.join(",", mids), dialogId));
                         while (cursor.next()) {
                             int mid = cursor.intValue(0);
                             NativeByteBuffer data = cursor.byteBufferValue(1);
@@ -10608,7 +10587,6 @@ public class MessagesStorage extends BaseController {
                                 data.reuse();
                                 if (message.media instanceof TLRPC.TL_messageMediaWebPage) {
                                     message.id = mid;
-                                    message.isDeleted = !cursor.isNull(2);
                                     message.media.webpage = webPages.valueAt(a);
                                     messages.add(message);
                                 }
@@ -13042,70 +13020,6 @@ public class MessagesStorage extends BaseController {
         }
     }
 
-    public void saveThHistory(long ownerId, long uid, long mid, long date, String message) {
-        try {
-            String query = String.format(Locale.US,
-                    "insert into telegraher_message_history values(%d,%d,%d,%d,'%s');"
-                    , ownerId
-                    , mid
-                    , uid
-                    , date
-                    , android.util.Base64.encodeToString(message.getBytes(), Base64.DEFAULT)
-            );
-            database.executeFast(query).stepThis().dispose();
-        } catch (Exception e) {
-//            FileLog.e(e);
-        }
-    }
-
-    public void wipeThHistory() {
-        try {
-            database.executeFast("delete from telegraher_message_history;").stepThis().dispose();
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-    }
-
-    public Map<Long, String> loadThHistory(long ownerid, long uid, long mid) {
-        Map<Long, String> map = new LinkedHashMap<>();
-        try {
-            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US, "select date,message from telegraher_message_history where ownerid=%d and uid=%d and mid=%d order by date desc;", ownerid, uid, mid));
-            while (cursor.next()) {
-                map.put(cursor.longValue(0), cursor.stringValue(1));
-            }
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return map;
-    }
-
-    public Boolean checkDeleted(MessageObject message) {
-        Log.d("fluffyLog", "checkHasDeleted" + message.messageOwner.dialog_id + message.messageOwner.id);
-        try {
-            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US,
-                    "SELECT 1 FROM telegraher_message_deletions WHERE uid=%d AND mid=%d LIMIT 1;",
-                    message.messageOwner.dialog_id, message.messageOwner.id));
-            return cursor.next();
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
-//        return checkHas(message.messageOwner.from_id, message.to_id, message.id);
-    }
-
-    public Boolean checkHas(long ownerid, long uid, long mid) {
-        Log.d("fluffyLog", "checkHas: " + ownerid + " " + uid + " " + mid);
-        try {
-            SQLiteCursor cursor = database.queryFinalized(String.format(Locale.US,
-                    "SELECT 1 FROM telegraher_message_history WHERE ownerid=%d AND uid=%d AND mid=%d LIMIT 1;",
-                    ownerid, uid, mid));
-            return cursor.next();
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return false;
-    }
-
     public void markMessagesContentAsRead(long dialogId, ArrayList<Integer> mids, int currentDate, int readDate) {
         if (isEmpty(mids)) {
             return;
@@ -15330,7 +15244,6 @@ public class MessagesStorage extends BaseController {
 
     // put messages in data base while load history
     public void putMessages(TLRPC.messages_Messages messages, long dialogId, int load_type, int max_id, boolean createDialog, int mode, long threadMessageId) {
-
         storageQueue.postRunnable(() -> {
             SQLitePreparedStatement state_messages = null;
             SQLitePreparedStatement state_messages_topics = null;
@@ -15497,12 +15410,6 @@ public class MessagesStorage extends BaseController {
                                 if (data != null) {
                                     TLRPC.Message oldMessage = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                                     oldMessage.readAttachPath(data, getUserConfig().clientUserId);
-                                    if (!oldMessage.message.equals(message.message) && message.from_id != null) {
-                                        saveThHistory(UserConfig.getInstance(currentAccount).getCurrentUser().id, message.dialog_id, message.id, getConnectionsManager().getCurrentTime(), oldMessage.message);
-//                                        Log.d("fluffyLog", message.dialog_id + " " + message.id + ' ' + message.from_id);
-//                                        Log.d("fluffyLog", message.message + " " + "saveTH");
-//                                        message.message = String.format("%s\n\n`%s`\n%s", message.message, ZonedDateTime.now().format(DateTimeFormatter.RFC_1123_DATE_TIME), oldMessage.message);
-                                    }
                                     data.reuse();
                                     if (reactionUpdates != null) {
                                         reactionUpdates.add(new SavedReactionsUpdate(selfId, oldMessage, message));
@@ -17944,28 +17851,6 @@ public class MessagesStorage extends BaseController {
                 }
             }
         });
-    }
-
-    public ArrayList<Long> getDialogIdsToUpdate(long dialogId, ArrayList<Integer> messages) {
-        try {
-            SQLiteCursor cursor;
-            String ids = TextUtils.join(",", messages);
-            var dialogsToUpdate = new HashSet<Long>();
-            if (dialogId != 0) {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND uid = %d", ids, dialogId));
-            } else {
-                cursor = database.queryFinalized(String.format(Locale.US, "SELECT uid, mid FROM messages_v2 WHERE mid IN(%s) AND is_channel = 0", ids));
-            }
-            while (cursor.next()) {
-                long did = cursor.longValue(0);
-                dialogsToUpdate.add(did);
-            }
-            cursor.dispose();
-            return new ArrayList<>(dialogsToUpdate);
-        } catch (Exception e) {
-            FileLog.e(e);
-        }
-        return null;
     }
 
     private boolean isForum(long dialogId) {

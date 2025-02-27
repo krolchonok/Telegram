@@ -113,6 +113,10 @@ public class MessageDetailsActivity extends BaseFragment {
             rowDataList.add(new RowData(rowCount++, getString(R.string.scheduleRow), String.valueOf(messageObject.messageOwner.from_scheduled)));
         }
 
+        if (messageObject.messageOwner.dialog_id != 0){
+            rowDataList.add(new RowData(rowCount++, getString(R.string.dialogIdRow), String.valueOf(messageObject.messageOwner.dialog_id)));
+        }
+
         if (messageObject.messageOwner.silent){
             rowDataList.add(new RowData(rowCount++, getString(R.string.silenceRow), String.valueOf(messageObject.messageOwner.silent)));
         }
@@ -123,6 +127,10 @@ public class MessageDetailsActivity extends BaseFragment {
 
         if (messageObject.messageOwner.edit_date != 0) {
             rowDataList.add(new RowData(rowCount++, getString(R.string.editDateRow), formatTime(messageObject.messageOwner.edit_date)));
+        }
+
+        if (messageObject.messageOwner.isDeleted) {
+            rowDataList.add(new RowData(rowCount++, getString(R.string.deletedRow), String.valueOf(messageObject.messageOwner.isDeleted)));
         }
 
         if (messageObject.messageOwner.from_id != null) {

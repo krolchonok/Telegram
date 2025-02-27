@@ -62,6 +62,7 @@ public class LocaleController {
     public static int nameDisplayOrder = 1;
     public static boolean is24HourFormat = false;
 
+    public FastDateFormat formatterDayS;
     private volatile FastDateFormat formatterDay;
     public FastDateFormat getFormatterDay() {
         if (fluffyConfig.formatTimeWithSeconds) {
@@ -367,6 +368,17 @@ public class LocaleController {
         return formatterScheduleSend[n];
     }
 
+    public static String formatDateBitch(long date, boolean wSeconds) {
+        try {
+            date *= 1000;
+            Calendar rightNow = Calendar.getInstance();
+            rightNow.setTimeInMillis(date);
+            return String.format("%1$s/%2$s", getInstance().formatterYear.format(new Date(date)), wSeconds ? getInstance().formatterDayS.format(new Date(date)) : getInstance().formatterDay.format(new Date(date)));
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+        return "LOC_ERR";
+    }
 
     private static HashMap<Integer, String> resourcesCacheMap = new HashMap<>();
 

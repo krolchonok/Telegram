@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="fluffySettings">fluffy Settings</string>
+    <string name="ReloadMessage">Reload messages</string>
     <string name="RestartAppToTakeEffect">Restart for aplly</string>
     <string name="ChatTweak">Chat Tweak</string>
     <string name="SelectCamera">Select Camera</string>
@@ -37,8 +38,10 @@
     <string name="idRow">ID</string>
     <string name="dateRow">Date</string>
     <string name="editDateRow">Edited Date</string>
+    <string name="deletedRow">Deleted</string>
     <string name="captionRow">Caption</string>
     <string name="scheduleRow">from Schedule</string>
+    <string name="dialogIdRow">Dialog ID</string>
     <string name="silenceRow">Silence</string>
     <string name="textRow">Text</string>
     <string name="forwardRow">Forwarded For</string>
@@ -52,6 +55,12 @@
     <string name="viaBotRow">via bot</string>
     <string name="EditsHistoryMenuText">View History</string>
     <string name="EditsHistoryTitle">Edits history</string>
+    <string name="THDMessageTTL">TTL %d″</string>
+    <string name="THDDeleteDownloadedFile">Delete downloaded file</string>
+    <string name="THDReloadMessage">Reload</string>
+    <string name="THHistory">History</string>
+
+
 
     <string name="formatterDay12HSec">h:mm:ss a</string>
     <string name="formatterDay24HSec">HH:mm:ss</string>

@@ -15,7 +15,7 @@ import java.util.Locale;
 
 public class DatabaseMigrationHelper {
 
-    public static int migrate(MessagesStorage messagesStorage, int version) throws Exception {
+    public static int migrate(MessagesStorage messagesStorage, int version, int durovRelogin) throws Exception {
         SQLiteDatabase database = messagesStorage.getDatabase();
         if (version < 4) {
             database.executeFast("CREATE TABLE IF NOT EXISTS user_photos(uid INTEGER, id INTEGER, data BLOB, PRIMARY KEY (uid, id))").stepThis().dispose();
@@ -1552,6 +1552,14 @@ public class DatabaseMigrationHelper {
             database.executeFast("ALTER TABLE popular_bots ADD COLUMN pos INTEGER").stepThis().dispose();
             database.executeFast("PRAGMA user_version = 162").stepThis().dispose();
             version = 162;
+        }
+
+        if (durovRelogin < 1) {
+            database.executeFast("CREATE TABLE telegraher_init(durov_relogin INTEGER);").stepThis().dispose();
+            database.executeFast("INSERT INTO telegraher_init VALUES(1);").stepThis().dispose();
+            database.executeFast("CREATE TABLE telegraher_message_history(ownerid INTEGER, mid INTEGER, uid INTEGER, date INTEGER, message TEXT, PRIMARY KEY(mid, uid, date));").stepThis().dispose();
+            database.executeFast("CREATE INDEX mid_uid ON telegraher_message_history (mid, uid);").stepThis().dispose();
+            database.executeFast("CREATE TABLE telegraher_message_deletions(mid INTEGER, uid INTEGER, isdel INTEGER, PRIMARY KEY(mid, uid));").stepThis().dispose();
         }
 
         return version;

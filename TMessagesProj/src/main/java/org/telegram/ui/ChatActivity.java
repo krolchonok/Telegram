@@ -78,6 +78,7 @@ import android.text.style.ClickableSpan;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.URLSpan;
+import android.util.Log;
 import android.util.Pair;
 import android.util.Property;
 import android.util.SparseArray;
@@ -292,6 +293,7 @@ import java.util.stream.Collectors;
 
 import org.ushastoe.fluffy.helpers.IpApiHelper;
 import org.ushastoe.fluffy.helpers.MessageHelper;
+import org.ushastoe.fluffy.saveMsg.ThMessageHistoryActivity;
 import org.ushastoe.fluffy.settings.fluffySettingsActivity;
 import org.ushastoe.fluffy.activities.MessageDetailsActivity;
 
@@ -1500,7 +1502,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int rename_business_link = 67;
     private final static int delete_business_link = 68;
 
-    private final static int share = 69;
+    private final static int share = 998;
 
     private final static int open_settings_fluffy = 999;
 
@@ -2733,6 +2735,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().addObserver(this, NotificationCenter.quickRepliesDeleted);
         getNotificationCenter().addObserver(this, NotificationCenter.quickRepliesUpdated);
         getNotificationCenter().addObserver(this, NotificationCenter.factCheckLoaded);
+        getNotificationCenter().addObserver(this, fluffyConfig.MESSAGES_DELETED_NOTIFICATION);
         if (chatMode == MODE_EDIT_BUSINESS_LINK) {
             getNotificationCenter().addObserver(this, NotificationCenter.businessLinksUpdated);
         }
@@ -3161,6 +3164,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         getNotificationCenter().removeObserver(this, NotificationCenter.availableEffectsUpdate);
         getNotificationCenter().removeObserver(this, NotificationCenter.starReactionAnonymousUpdate);
         getNotificationCenter().removeObserver(this, NotificationCenter.factCheckLoaded);
+        getNotificationCenter().removeObserver(this, fluffyConfig.MESSAGES_DELETED_NOTIFICATION);
 
         if (chatMode == MODE_EDIT_BUSINESS_LINK) {
             getNotificationCenter().removeObserver(this, NotificationCenter.businessLinksUpdated);
@@ -22885,6 +22889,24 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 messageObject.setMyPaidReactionAnonymous(anonymous);
             }
         }
+        if (id == fluffyConfig.MESSAGES_DELETED_NOTIFICATION) {
+            Log.d("fluffyLog", "messages deleted");
+            long dialogId = (Long) args[0];
+            if (dialogId != dialog_id && (ChatObject.isChannel(currentChat) || dialogId != 0)) {
+                return;
+            }
+            ArrayList<Integer> messageIds = (ArrayList<Integer>) args[1];
+            for (int a = 0, N = messageIds.size(); a < N; a++) {
+                int mid = messageIds.get(a);
+                MessageObject currentMessage = messagesDict[0].get(mid);
+                if (currentMessage != null) {
+                    if (chatAdapter != null) {
+                        chatAdapter.updateRowWithMessageObject(currentMessage, false, true);
+                    }
+                }
+            }
+        }
+
     }
 
     private AlertDialog quoteMessageUpdateAlert;
@@ -29586,6 +29608,25 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimPopupWindowItems = null;
                 return false;
             }
+            if ((message != null
+                    && ((message.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || message.isEditing())
+                    && message.messageOwner.from_id != null) && getMessagesStorage().checkHas(UserConfig.getInstance(currentAccount).getCurrentUser().id, message.messageOwner.dialog_id, message.messageOwner.id)) {
+                items.add(LocaleController.getString(R.string.THHistory));
+                options.add(420_001);
+                icons.add(R.drawable.msg_log);
+            }
+
+            if (message != null && (message.isDocument() || message.isVideo() || message.isMusic())) {
+                items.add(LocaleController.getString(R.string.THDDeleteDownloadedFile));
+                options.add(420_002);
+                icons.add(R.drawable.msg_delete_filled);
+            }
+
+            if (message != null && message.messageOwner.ttl > 0) {
+                items.add(String.format(LocaleController.getString(R.string.THDMessageTTL), message.messageOwner.ttl));
+                options.add(420_003);
+                icons.add(R.drawable.flame_small);
+            }
 
             final AtomicBoolean waitForLangDetection = new AtomicBoolean(false);
             final AtomicReference<Runnable> onLangDetectionDone = new AtomicReference(null);
@@ -31524,6 +31565,12 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         }
         boolean preserveDim = false;
         switch (option) {
+            case 420_001: {
+//                presentFragment(new ThMessageHistory(getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id)));
+                presentFragment(new ThMessageHistoryActivity(selectedObject));
+//                Log.d("420_001",getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id).toString());
+                break;
+            }
             case OPTION_RETRY: {
                 if (selectedObjectGroup != null) {
                     boolean success = true;

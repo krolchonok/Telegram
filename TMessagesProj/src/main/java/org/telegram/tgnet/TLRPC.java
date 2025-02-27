@@ -57711,6 +57711,7 @@ public class TLRPC {
         public TL_textWithEntities translatedText; // custom
         public TL_stories.StoryItem replyStory; //custom
         public InputQuickReplyShortcut quick_reply_shortcut; //custom
+        public boolean isDeleted = false;
 
         public static Message TLdeserialize(InputSerializedData stream, int constructor, boolean exception) {
             Message result = null;

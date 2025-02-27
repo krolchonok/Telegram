@@ -50,6 +50,8 @@ public class fluffyConfig {
     public static final int DOUBLE_TAP_ACTION_REPEAT = 4;
     public static final int DOUBLE_TAP_ACTION_EDIT = 5;
 
+    public static final int MESSAGES_DELETED_NOTIFICATION = 6969;
+
     public static int doubleTapInAction;
     public static int doubleTapOutAction;
 

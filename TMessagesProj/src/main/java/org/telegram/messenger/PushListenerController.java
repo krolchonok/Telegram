@@ -223,6 +223,7 @@ public class PushListenerController {
                     if (BuildVars.LOGS_ENABLED) {
                         FileLog.d(tag + " " + loc_key);
                     }
+                    System.out.println(loc_key);
                     switch (loc_key) {
                         case "DC_UPDATE": {
                             int dc = custom.getInt("dc");
@@ -356,6 +357,8 @@ public class PushListenerController {
                             NotificationsController.getInstance(currentAccount).removeDeletedMessagesFromNotifications(deletedMessages, false);
 
                             MessagesController.getInstance(currentAccount).deleteMessagesByPush(dialogId, ids, channel_id);
+//                            MessagesController.getInstance(currentAccount).loadMessages(dialogId, 0, false, 50, ids.get(0), 0, false, 0, classGuid, 3, 0, chatMode, threadMessageId, replyMaxReadId, lastLoadIndex++, isTopic);
+
                             if (BuildVars.LOGS_ENABLED) {
                                 FileLog.d(tag + " received " + loc_key + " for dialogId = " + dialogId + " mids = " + TextUtils.join(",", ids));
                             }

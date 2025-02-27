@@ -34,6 +34,7 @@ import android.provider.OpenableColumns;
 import android.text.Spannable;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -3054,6 +3055,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
     }
 
     public void onMessageEdited(TLRPC.Message message) {
+        Log.d("fluffyLog", "onMessageEdited");
         if (message != null && message.reply_markup != null) {
             List<String> keys = waitingForCallbackMap.remove(message.dialog_id + "_" + message.id);
             if (keys != null) {
