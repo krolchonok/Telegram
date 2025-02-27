@@ -3750,14 +3750,14 @@ public class MessagesStorage extends BaseController {
                     cursor = null;
 
                     database.executeFast("DELETE FROM unread_push_messages WHERE date <= " + maxDate).stepThis().dispose();
-                    cursor = database.queryFinalized("SELECT m.data, m.mid, m.date, m.uid, m.random, m.fm, m.name, m.uname, m.flags, tmd.isdel FROM unread_push_messages as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE 1 ORDER BY m.date DESC LIMIT 50");
+                    cursor = database.queryFinalized("SELECT m.data, m.mid, m.date, m.uid, m.random, m.fm, m.name, m.uname, m.flags, m.topicId, m.is_reaction, tmd.isdel FROM unread_push_messages as m LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE 1 ORDER BY m.date DESC LIMIT 50");
                     while (cursor.next()) {
                         NativeByteBuffer data = cursor.byteBufferValue(0);
                         if (data != null) {
                             TLRPC.Message message = TLRPC.Message.TLdeserialize(data, data.readInt32(false), false);
                             data.reuse();
                             message.id = cursor.intValue(1);
-                            message.isDeleted = !cursor.isNull(9);
+                            message.isDeleted = !cursor.isNull(11);
                             message.date = cursor.intValue(2);
                             message.dialog_id = cursor.longValue(3);
                             message.random_id = cursor.longValue(4);
@@ -9401,7 +9401,7 @@ public class MessagesStorage extends BaseController {
         updateWidgets(dids);
     }
 
-    private void updateWidgets(List<Long> dids) {
+    private void updateWidgets(ArrayList<Long> dids) {
         if (dids.isEmpty()) {
             return;
         }
@@ -13196,8 +13196,13 @@ public class MessagesStorage extends BaseController {
                         long dialogId = dialogs.keyAt(a);
                         ArrayList<Integer> mids = dialogs.valueAt(a);
 //                        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, mids, 0L, false));
-//                        markMessagesAsDeletedInternal(dialogId, mids, true, 0, 0);
                         markMessagesAsIsDeletedInternal(dialogId, mids);
+
+
+
+//                        AndroidUtilities.runOnUIThread(() -> getNotificationCenter().postNotificationName(NotificationCenter.messagesDeleted, mids, 0L, false));
+//                        markMessagesAsDeletedInternal(dialogId, mids, true, 0, 0);
+//                        markMessagesAsIsDeletedInternal(dialogId, mids);
 //                        updateDialogsWithReadMessagesInternal(mids, null, null, null, null);
 //                        updateDialogsWithDeletedMessagesInternal(dialogId, 0, mids, null);
 
@@ -13659,7 +13664,7 @@ public class MessagesStorage extends BaseController {
                         database.executeFast(String.format(Locale.US, "UPDATE media_counts_topics SET old = 1 WHERE uid = %d", dialogId)).stepThis().dispose();
                     }
                 }
-                getMediaDataController().clearBotKeyboardN(0, messages);
+//                getMediaDataController().clearBotKeyboardN(0, messages);
 
                 if (dialogsToUpdate.size() != 0) {
                     resetAllUnreadCounters(false);
@@ -16140,7 +16145,7 @@ public class MessagesStorage extends BaseController {
                     }
 
                     ArrayList<Pair<Long, Long>> dialogsToLoadGroupMessages = new ArrayList<>();
-                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags, m.date, d.pts, d.inbox_max, d.outbox_max, m.replydata, d.pinned, d.unread_count_i, d.flags, d.folder_id, d.data, d.unread_reactions, tmd.isdel FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid LEFT JOIN dialog_settings as s ON d.did = s.did LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE d.folder_id = %d ORDER BY d.pinned DESC, d.date DESC LIMIT %d,%d", fid, off, cnt));
+                    cursor = database.queryFinalized(String.format(Locale.US, "SELECT d.did, d.last_mid, d.unread_count, d.date, m.data, m.read_state, m.mid, m.send_state, s.flags, m.date, d.pts, d.inbox_max, d.outbox_max, m.replydata, d.pinned, d.unread_count_i, d.flags, d.folder_id, d.data, d.unread_reactions, d.last_mid_group, d.ttl_period, tmd.isdel FROM dialogs as d LEFT JOIN messages_v2 as m ON d.last_mid = m.mid AND d.did = m.uid AND d.last_mid_group IS NULLLEFT JOIN dialog_settings as s ON d.did = s.did LEFT JOIN telegraher_message_deletions as tmd ON tmd.mid=m.mid AND tmd.uid=m.uid WHERE d.folder_id = %d ORDER BY d.pinned DESC, d.date DESC LIMIT %d,%d", fid, off, cnt));
                     while (cursor.next()) {
                         long dialogId = cursor.longValue(0);
                         TLRPC.Dialog dialog;
@@ -16210,7 +16215,7 @@ public class MessagesStorage extends BaseController {
                                 data.reuse();
                                 MessageObject.setUnreadFlags(message, cursor.intValue(5));
                                 message.id = cursor.intValue(6);
-                                message.isDeleted = !cursor.isNull(21);
+                                message.isDeleted = !cursor.isNull(22);
                                 int date = cursor.intValue(9);
                                 if (date != 0) {
                                     dialog.last_message_date = date;
