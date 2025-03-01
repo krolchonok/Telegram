@@ -9,9 +9,6 @@ import android.util.Base64;
 import android.util.Log;
 
 import androidx.collection.LongSparseArray;
-
-import org.telegram.SQLite.SQLiteDatabase;
-import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -88,7 +85,6 @@ public class MessageHelper {
             return Base64.encodeToString(data, Base64.NO_PADDING | Base64.NO_WRAP);
         }
     }
-    private SQLiteDatabase database;
 
 
     private static final SpannableStringBuilder[] spannedStrings = new SpannableStringBuilder[5];
@@ -113,12 +109,9 @@ public class MessageHelper {
                     .append(spannedStrings[1])
                     .append(' ');
         }
-        Log.d("fluffyLog", "createNewString" + messageObject.messageOwner.isDeleted);
+        Log.d("fluffyLog", "createNewString" + messageObject.messageOwner.isDeleted());
 
-        boolean test = AccountInstance.getInstance(UserConfig.selectedAccount).getMessagesStorage().checkDeleted(messageObject);
-        Log.d("fluffyLog", "createNewString" + test);
-        if (messageObject.messageOwner.isDeleted ) {
-            Log.d("fluffyLog", "createNewStringisdeleted");
+        if (messageObject.messageOwner.isDeleted() ) {
             if (spannedStrings[2] == null) {
                 spannedStrings[2] = new SpannableStringBuilder("\u200B");
                 ColoredImageSpan icon = new ColoredImageSpan(Theme.chat_deleteDrawable);
@@ -130,7 +123,7 @@ public class MessageHelper {
                     .append(' ');
         }
 
-        if (messageObject.isEdited() && !messageObject.messageOwner.isDeleted) {
+        if (messageObject.isEdited() && !messageObject.messageOwner.isDeleted()) {
             if (spannedStrings[3] == null) {
                 spannedStrings[3] = new SpannableStringBuilder("\u200B");
                 ColoredImageSpan edit_icon = new ColoredImageSpan(Theme.chat_editDrawable);

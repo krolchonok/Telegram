@@ -263,6 +263,7 @@ import org.telegram.ui.bots.BotCommandsMenuView;
 import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.bots.WebViewRequestProps;
 import org.ushastoe.fluffy.BulletinHelper;
+import org.ushastoe.fluffy.activities.ThMessageHistoryActivity;
 import org.ushastoe.fluffy.fluffyConfig;
 
 import java.io.BufferedReader;
@@ -1094,6 +1095,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
     private final static int OPTION_REPEAT = 94;
 
     private final static int[] allowedNotificationsDuringChatListAnimations = new int[]{
+            fluffyConfig.MESSAGES_DELETED_NOTIFICATION,
 
             NotificationCenter.messagesRead,
             NotificationCenter.threadMessagesRead,
@@ -22888,9 +22890,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
             if (messageObject != null) {
                 messageObject.setMyPaidReactionAnonymous(anonymous);
             }
-        }
-        if (id == fluffyConfig.MESSAGES_DELETED_NOTIFICATION) {
-            Log.d("fluffyLog", "messages deleted");
+        } else if (fluffyConfig.saveDel && id == fluffyConfig.MESSAGES_DELETED_NOTIFICATION) {
             long dialogId = (Long) args[0];
             if (dialogId != dialog_id && (ChatObject.isChannel(currentChat) || dialogId != 0)) {
                 return;
@@ -29608,26 +29608,14 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
                 scrimPopupWindowItems = null;
                 return false;
             }
+
             if ((message != null
                     && ((message.messageOwner.flags & TLRPC.MESSAGE_FLAG_EDITED) != 0 || message.isEditing())
-                    && message.messageOwner.from_id != null) && getMessagesStorage().checkHas(UserConfig.getInstance(currentAccount).getCurrentUser().id, message.messageOwner.dialog_id, message.messageOwner.id)) {
+                    && message.messageOwner.from_id != null) && getMessagesStorage().checkEdited(message)) {
                 items.add(LocaleController.getString(R.string.THHistory));
                 options.add(420_001);
                 icons.add(R.drawable.msg_log);
             }
-
-            if (message != null && (message.isDocument() || message.isVideo() || message.isMusic())) {
-                items.add(LocaleController.getString(R.string.THDDeleteDownloadedFile));
-                options.add(420_002);
-                icons.add(R.drawable.msg_delete_filled);
-            }
-
-            if (message != null && message.messageOwner.ttl > 0) {
-                items.add(String.format(LocaleController.getString(R.string.THDMessageTTL), message.messageOwner.ttl));
-                options.add(420_003);
-                icons.add(R.drawable.flame_small);
-            }
-
             final AtomicBoolean waitForLangDetection = new AtomicBoolean(false);
             final AtomicReference<Runnable> onLangDetectionDone = new AtomicReference(null);
 
@@ -31566,9 +31554,7 @@ public class ChatActivity extends BaseFragment implements NotificationCenter.Not
         boolean preserveDim = false;
         switch (option) {
             case 420_001: {
-//                presentFragment(new ThMessageHistory(getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id)));
                 presentFragment(new ThMessageHistoryActivity(selectedObject));
-//                Log.d("420_001",getAccountInstance().getMessagesStorage().loadThHistory(selectedObject.messageOwner.dialog_id, selectedObject.messageOwner.id).toString());
                 break;
             }
             case OPTION_RETRY: {
